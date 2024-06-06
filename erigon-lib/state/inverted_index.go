@@ -856,7 +856,7 @@ func (iit *InvertedIndexRoTx) Prune(ctx context.Context, rwTx kv.RwTx, txFrom, t
 		return nil
 	}, etl.TransformArgs{Quit: ctx.Done()})
 
-	if stat.MinTxNum != math.MaxUint64 {
+	if stat.MaxTxNum > stat.MinTxNum {
 		binary.BigEndian.PutUint64(txKey[:], stat.MinTxNum)
 		// This deletion iterator goes last to preserve invariant: if some `txNum=N` pruned - it's pruned Fully
 		for txnb, _, err := keysCursor.Seek(txKey[:]); txnb != nil; txnb, _, err = keysCursor.NextNoDup() {

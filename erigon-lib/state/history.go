@@ -1102,6 +1102,7 @@ func (ht *HistoryRoTx) Prune(ctx context.Context, rwTx kv.RwTx, txFrom, txTo, li
 				return err
 			}
 			if vtx := binary.BigEndian.Uint64(vv); vtx != txNum {
+				// index pruning going slower than history pruning
 				return fmt.Errorf("prune history %s got invalid txNum: found %d != %d wanted", ht.h.filenameBase, vtx, txNum)
 			}
 			if err = valsCDup.DeleteCurrent(); err != nil {

@@ -496,6 +496,152 @@ func TestHistoryCanPrune(t *testing.T) {
 	})
 }
 
+func TestHistoryPruneCorrectnessWithFiles(t *testing.T) {
+	values := generateTestData(t, length.Addr, length.Addr, 1000, 1000, 1)
+	db, h := filledHistoryValues(t, false, values, log.New())
+	defer db.Close()
+	defer h.Close()
+	h.dontProduceHistoryFiles = true
+	h.keepRecentTxInDB = 500
+	t.Logf("step=%d\n", h.aggregationStep)
+
+	logEvery := time.NewTicker(30 * time.Second)
+	defer logEvery.Stop()
+
+	pruneLimit := uint64(10)
+	pruneIters := 8
+
+	rwTx, err := db.BeginRw(context.Background())
+	require.NoError(t, err)
+	defer rwTx.Rollback()
+
+	var from, to [8]byte
+	binary.BigEndian.PutUint64(from[:], uint64(0))
+	binary.BigEndian.PutUint64(to[:], uint64(pruneIters)*pruneLimit)
+
+	// iccr, err := rwTx.RwCursorDupSort(h.historyValsTable)
+	// require.NoError(t, err)
+
+	// count := 1
+	// for key, _, err := iccr.First(); key != nil; key, _, err = iccr.Next() {
+	// 	require.NoError(t, err)
+	// 	// t.Logf("key %x\n", key)
+	// 	if count == 0 {
+	// 		break
+	// 	}
+	// 	count--
+	// 	iccr.DeleteCurrent()
+	// }
+	// // require.EqualValues(t, pruneIters*int(pruneLimit), count)
+	// iccr.Close()
+
+	hc := h.BeginFilesRo()
+	defer hc.Close()
+
+	fmt.Printf("start index keys table %q:\n", hc.iit.ii.indexTable)
+	itable, err := rwTx.CursorDupSort(hc.iit.ii.indexTable)
+	require.NoError(t, err)
+	defer itable.Close()
+	limits := 10
+	for k, v, err := itable.First(); k != nil; k, v, err = itable.Next() {
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		limits--
+		if limits == 0 {
+			break
+		}
+		fmt.Printf("k=%x [%d] v=%x\n", k, binary.BigEndian.Uint64(k), v)
+	}
+	canHist, txTo := hc.canPruneUntil(rwTx, math.MaxUint64)
+	t.Logf("can=%t to=%d", canHist, txTo)
+
+	stat, err := hc.Prune(context.Background(), rwTx, 0, txTo, 50, false, false, logEvery)
+	require.NoError(t, err)
+	require.NotNil(t, stat)
+	t.Logf("stat=%v", stat)
+
+	stat, err = hc.Prune(context.Background(), rwTx, 0, 600, 500, false, false, logEvery)
+	require.NoError(t, err)
+	require.NotNil(t, stat)
+	t.Logf("stat=%v", stat)
+	stat, err = hc.Prune(context.Background(), rwTx, 0, 600, 10, true, false, logEvery)
+	require.NoError(t, err)
+	// require.NotNil(t, stat)
+	t.Logf("stat=%v", stat)
+
+	// this one should prune value of tx=0 due to given range [0,1) (we have first value at tx=0) even it is forced
+	// stat, err = hc.Prune(context.Background(), rwTx, 0, 1, pruneLimit, true, false, logEvery)
+	// require.NoError(t, err)
+	// require.EqualValues(t, 1, stat.PruneCountValues)
+	// require.EqualValues(t, 1, stat.PruneCountTx)
+
+	// this should prune exactly pruneLimit*pruneIter transactions
+	// for i := 0; i < pruneIters; i++ {
+	// 	stat, err = hc.Prune(context.Background(), rwTx, 0, 1000, pruneLimit, true, false, logEvery)
+	// 	require.NoError(t, err)
+	// 	t.Logf("[%d] stats: %v", i, stat)
+	// }
+
+	fmt.Printf("start hist table:\n")
+	icc, err := rwTx.CursorDupSort(h.historyValsTable)
+	require.NoError(t, err)
+	defer icc.Close()
+	limits = 10
+	for k, v, err := icc.First(); k != nil; k, v, err = icc.Next() {
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		limits--
+		if limits == 0 {
+			break
+		}
+		fmt.Printf("k=%x [%d], v=%x\n", k, binary.BigEndian.Uint64(k[len(k)-8:]), v)
+	}
+
+	fmt.Printf("start index table:\n")
+	itable, err = rwTx.CursorDupSort(hc.iit.ii.indexTable)
+	require.NoError(t, err)
+	defer itable.Close()
+	limits = 10
+	defer itable.Close()
+	for k, v, err := itable.First(); k != nil; k, v, err = itable.Next() {
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		limits--
+		if limits == 0 {
+			break
+		}
+		fmt.Printf("k=%x [%d] v=%x\n", k, binary.BigEndian.Uint64(v), v)
+	}
+
+	fmt.Printf("start index keys table:\n")
+	itable, err = rwTx.CursorDupSort(hc.iit.ii.indexKeysTable)
+	require.NoError(t, err)
+	defer itable.Close()
+	limits = 10
+	for k, v, err := itable.First(); k != nil; k, v, err = itable.Next() {
+		if err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if limits == 0 {
+			break
+		}
+		limits--
+		fmt.Printf("k=%x [%d] v=%x\n", k, binary.BigEndian.Uint64(k), v)
+	}
+
+	key, _, err := icc.First()
+	require.NoError(t, err)
+	require.NotNil(t, key)
+	// require.EqualValues(t, pruneIters*int(pruneLimit), binary.BigEndian.Uint64(key[len(key)-8:])-1)
+
+	icc, err = rwTx.CursorDupSort(h.indexTable)
+	require.NoError(t, err)
+	defer icc.Close()
+}
+
 func TestHistoryPruneCorrectness(t *testing.T) {
 	values := generateTestData(t, length.Addr, length.Addr, 1000, 1000, 1)
 	db, h := filledHistoryValues(t, true, values, log.New())
