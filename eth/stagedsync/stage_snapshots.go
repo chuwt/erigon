@@ -370,7 +370,7 @@ func FillDBFromSnapshots(logPrefix string, ctx context.Context, tx kv.RwTx, dirs
 			}
 			if historyV3 {
 				_ = tx.ClearBucket(kv.MaxTxNum)
-				if err := blockReader.IterateFrozenBodies(func(blockNum, baseTxNum, txAmount uint64) error {
+				if err := blockReader.IterateFrozenBodies(func(blockNum, baseTxNum, txCount uint64) error {
 					select {
 					case <-ctx.Done():
 						return ctx.Err()
@@ -378,7 +378,7 @@ func FillDBFromSnapshots(logPrefix string, ctx context.Context, tx kv.RwTx, dirs
 						logger.Info(fmt.Sprintf("[%s] MaxTxNums index: %dk/%dk", logPrefix, blockNum/1000, blockReader.FrozenBlocks()/1000))
 					default:
 					}
-					maxTxNum := baseTxNum + txAmount - 1
+					maxTxNum := baseTxNum + txCount - 1
 
 					if err := rawdbv3.TxNums.Append(tx, blockNum, maxTxNum); err != nil {
 						return fmt.Errorf("%w. blockNum=%d, maxTxNum=%d", err, blockNum, maxTxNum)

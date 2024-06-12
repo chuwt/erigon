@@ -56,7 +56,7 @@ var TxsV3 = Migration{
 				if b == nil {
 					log.Debug("PruneBlocks: block body not found", "height", blockNum)
 				} else {
-					for txID := b.BaseTxId; txID < b.BaseTxId+uint64(b.TxAmount); txID++ {
+					for txID := b.BaseTxId; txID < b.BaseTxId+uint64(b.TxCount); txID++ {
 						binary.BigEndian.PutUint64(txIDBytes, txID)
 						if err = tx.Delete(kv.NonCanonicalTxs, txIDBytes); err != nil {
 							return err

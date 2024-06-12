@@ -114,7 +114,7 @@ func writeRawBodyDeprecated(db kv.RwTx, hash libcommon.Hash, number uint64, body
 	}
 	data := types.BodyForStorage{
 		BaseTxId: baseTxId,
-		TxAmount: uint32(len(body.Transactions)),
+		TxCount:  uint32(len(body.Transactions)),
 		Uncles:   body.Uncles,
 	}
 	if err = rawdb.WriteBodyForStorage(db, hash, number, &data); err != nil {

@@ -88,13 +88,13 @@ var TxsBeginEnd = Migration{
 				continue
 			}
 
-			txs, err := canonicalTransactions(tx, b.BaseTxId, b.TxAmount)
+			txs, err := canonicalTransactions(tx, b.BaseTxId, b.TxCount)
 			if err != nil {
 				return err
 			}
 
 			b.BaseTxId += (blockNum) * 2
-			b.TxAmount += 2
+			b.TxCount += 2
 			if err := rawdb.WriteBodyForStorage(tx, canonicalHash, blockNum, b); err != nil {
 				return fmt.Errorf("failed to write body: %w", err)
 			}
@@ -107,13 +107,13 @@ var TxsBeginEnd = Migration{
 				return fmt.Errorf("failed to write body txs: %w", err)
 			}
 			// del last tx in block
-			if err = tx.Delete(kv.EthTx, hexutility.EncodeTs(b.BaseTxId+uint64(b.TxAmount)-1)); err != nil {
+			if err = tx.Delete(kv.EthTx, hexutility.EncodeTs(b.BaseTxId+uint64(b.TxCount)-1)); err != nil {
 				return err
 			}
 
 			if assert.Enable {
-				newBlock, baseTxId, txAmount := rawdb.ReadBody(tx, canonicalHash, blockNum)
-				newBlock.Transactions, err = canonicalTransactions(tx, baseTxId, txAmount)
+				newBlock, baseTxId, txCount := rawdb.ReadBody(tx, canonicalHash, blockNum)
+				newBlock.Transactions, err = canonicalTransactions(tx, baseTxId, txCount)
 				for i, oldTx := range oldBlock.Transactions {
 					newTx := newBlock.Transactions[i]
 					if oldTx.GetNonce() != newTx.GetNonce() {
@@ -131,7 +131,7 @@ var TxsBeginEnd = Migration{
 					return err
 				}
 
-				for i := bodyForStorage.BaseTxId; i < bodyForStorage.BaseTxId+uint64(bodyForStorage.TxAmount); i++ {
+				for i := bodyForStorage.BaseTxId; i < bodyForStorage.BaseTxId+uint64(bodyForStorage.TxCount); i++ {
 					binary.BigEndian.PutUint64(numBuf, i)
 					if err = tx.Delete(kv.NonCanonicalTxs, numBuf); err != nil {
 						return err
@@ -211,7 +211,7 @@ var TxsBeginEnd = Migration{
 					if err != nil {
 						return err
 					}
-					newSeqValue = bodyForStorage.BaseTxId + uint64(bodyForStorage.TxAmount) - currentSeq
+					newSeqValue = bodyForStorage.BaseTxId + uint64(bodyForStorage.TxCount) - currentSeq
 				}
 
 				if _, err := tx.IncrementSequence(kv.EthTx, newSeqValue); err != nil {
@@ -258,7 +258,7 @@ func readCanonicalBodyWithTransactionsDeprecated(db kv.Getter, hash common2.Hash
 	}
 	body := new(types.Body)
 	body.Uncles = bodyForStorage.Uncles
-	body.Transactions, err = canonicalTransactions(db, bodyForStorage.BaseTxId, bodyForStorage.TxAmount)
+	body.Transactions, err = canonicalTransactions(db, bodyForStorage.BaseTxId, bodyForStorage.TxCount)
 	if err != nil {
 		log.Error("failed ReadTransactionByHash", "hash", hash, "block", number, "err", err)
 		return nil
@@ -286,12 +286,12 @@ func MakeBodiesNonCanonicalDeprecated(tx kv.RwTx, from uint64, ctx context.Conte
 		}
 
 		// move txs to NonCanonical bucket, it has own sequence
-		newBaseId, err := tx.IncrementSequence(kv.NonCanonicalTxs, uint64(bodyForStorage.TxAmount))
+		newBaseId, err := tx.IncrementSequence(kv.NonCanonicalTxs, uint64(bodyForStorage.TxCount))
 		if err != nil {
 			return err
 		}
 		id := newBaseId
-		if err := tx.ForAmount(kv.EthTx, hexutility.EncodeTs(bodyForStorage.BaseTxId), bodyForStorage.TxAmount, func(k, v []byte) error {
+		if err := tx.ForAmount(kv.EthTx, hexutility.EncodeTs(bodyForStorage.BaseTxId), bodyForStorage.TxCount, func(k, v []byte) error {
 			if err := tx.Put(kv.NonCanonicalTxs, hexutility.EncodeTs(id), v); err != nil {
 				return err
 			}
