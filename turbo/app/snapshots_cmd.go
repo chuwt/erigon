@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/ledgerwatch/erigon-lib/downloader/snaptype"
 	"io"
 	"math"
 	"net/http"
@@ -162,6 +163,83 @@ var snapshotCommand = cli.Command{
 				return dir.DeleteFiles(dirs.SnapIdx, dirs.SnapHistory, dirs.SnapDomain, dirs.SnapAccessors)
 			},
 			Flags: joinFlags([]cli.Flag{&utils.DataDirFlag}),
+		},
+		{
+			Name:  "mv-state-snapshots",
+			Usage: "Move state snapshots from one directory to another. To re-execute some region e.g.",
+			Action: func(cliCtx *cli.Context) error {
+				dirs := datadir.New(cliCtx.String(utils.DataDirFlag.Name))
+				stepMv := cliCtx.String("step")
+				if stepMv == "" {
+					return errors.New("step range to move is required (eg 0-2)")
+				}
+				targetDir := cliCtx.String("to")
+				if targetDir == "" {
+					return errors.New("target directory should be passed with --to flag")
+				}
+				var err error
+				targetDir, err = filepath.Abs(targetDir)
+				if err != nil {
+					return err
+				}
+
+				err = os.MkdirAll(targetDir, 0644)
+				if err != nil {
+					return err
+				}
+
+				parseStep := func(step string) (uint64, uint64, error) {
+					var from, to uint64
+					if _, err := fmt.Sscanf(step, "%d-%d", &from, &to); err != nil {
+						return 0, 0, fmt.Errorf("step expected in format from-to, got %s", step)
+					}
+					return from, to, nil
+				}
+				minS, maxS, err := parseStep(stepMv)
+				if err != nil {
+					return err
+				}
+				for _, dirPath := range []string{dirs.SnapIdx, dirs.SnapHistory, dirs.SnapDomain, dirs.SnapAccessors} {
+					filePaths, err := dir.ListFiles(dirPath)
+					if err != nil {
+						return err
+					}
+					for _, filePath := range filePaths {
+						_, fName := filepath.Split(filePath)
+						res, _, ok := snaptype.ParseFileName(dirPath, fName)
+						if !ok {
+							fmt.Printf("skipping %s (cannot parse)\n", filePath)
+							continue
+						}
+						if res.From == 0 && res.To == 0 {
+							parts := strings.Split(fName, ".")
+							if len(parts) == 3 || len(parts) == 4 {
+								fsteps := strings.Split(parts[1], "-")
+								res.From, err = strconv.ParseUint(fsteps[0], 10, 64)
+								if err != nil {
+									return err
+								}
+								res.To, err = strconv.ParseUint(fsteps[1], 10, 64)
+								if err != nil {
+									return err
+								}
+							}
+						}
+
+						if res.From >= minS && res.To <= maxS {
+							newPath := filepath.Join(targetDir, strings.TrimPrefix(res.Dir(), dirs.Snap), res.Name())
+							//fmt.Printf("mv %s to %s\n", filePath, newPath)
+							if err := os.Rename(filePath, newPath); err != nil {
+								return fmt.Errorf("failed to remove %s: %w", fName, err)
+							}
+						}
+
+					}
+				}
+
+				return nil
+			},
+			Flags: joinFlags([]cli.Flag{&utils.DataDirFlag, &cli.StringFlag{Name: "step", Required: true}, &cli.StringFlag{Name: "to", Required: true}}),
 		},
 		{
 			Name: "rm-state-snapshots",
