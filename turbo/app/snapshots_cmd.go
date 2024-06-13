@@ -183,7 +183,7 @@ var snapshotCommand = cli.Command{
 					return err
 				}
 
-				err = os.MkdirAll(targetDir, 0644)
+				err = os.MkdirAll(targetDir, 0755)
 				if err != nil {
 					return err
 				}
