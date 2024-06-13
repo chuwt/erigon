@@ -228,7 +228,6 @@ var snapshotCommand = cli.Command{
 
 						if res.From >= minS && res.To <= maxS {
 							relBasePath := filepath.Join(targetDir, strings.TrimPrefix(res.Dir(), dirs.Snap))
-							fmt.Printf("mkdri %s\n", relBasePath)
 							if err := os.MkdirAll(relBasePath, 0755); err != nil {
 								return err
 							}
