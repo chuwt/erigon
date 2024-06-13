@@ -183,7 +183,7 @@ var snapshotCommand = cli.Command{
 					return err
 				}
 
-				err = os.MkdirAll(targetDir, 0755)
+				err = os.MkdirAll(targetDir, 0660)
 				if err != nil {
 					return err
 				}
@@ -228,7 +228,7 @@ var snapshotCommand = cli.Command{
 
 						if res.From >= minS && res.To <= maxS {
 							relBasePath := filepath.Join(targetDir, strings.TrimPrefix(res.Dir(), dirs.Snap))
-							if err := os.MkdirAll(relBasePath, 0755); err != nil {
+							if err := os.MkdirAll(relBasePath, 0660); err != nil {
 								return err
 							}
 
