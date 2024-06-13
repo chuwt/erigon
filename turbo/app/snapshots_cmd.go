@@ -234,10 +234,10 @@ var snapshotCommand = cli.Command{
 							}
 
 							newPath := filepath.Join(relBasePath, res.Name())
-							fmt.Printf("mv %s to %s\n", filePath, newPath)
-							//if err := os.Rename(filePath, newPath); err != nil {
-							//	return fmt.Errorf("failed to move %s: %w", fName, err)
-							//}
+							//fmt.Printf("mv %s to %s\n", filePath, newPath)
+							if err := os.Rename(filePath, newPath); err != nil {
+								return fmt.Errorf("failed to move %s: %w", fName, err)
+							}
 						}
 
 					}
