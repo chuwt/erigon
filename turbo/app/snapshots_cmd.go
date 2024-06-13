@@ -227,11 +227,17 @@ var snapshotCommand = cli.Command{
 						}
 
 						if res.From >= minS && res.To <= maxS {
-							newPath := filepath.Join(targetDir, strings.TrimPrefix(res.Dir(), dirs.Snap), res.Name())
-							//fmt.Printf("mv %s to %s\n", filePath, newPath)
-							if err := os.Rename(filePath, newPath); err != nil {
-								return fmt.Errorf("failed to remove %s: %w", fName, err)
+							relBasePath := filepath.Join(targetDir, strings.TrimPrefix(res.Dir(), dirs.Snap))
+							fmt.Printf("mkdri %s\n", relBasePath)
+							if err := os.MkdirAll(relBasePath, 0755); err != nil {
+								return err
 							}
+
+							newPath := filepath.Join(relBasePath, res.Name())
+							fmt.Printf("mv %s to %s\n", filePath, newPath)
+							//if err := os.Rename(filePath, newPath); err != nil {
+							//	return fmt.Errorf("failed to move %s: %w", fName, err)
+							//}
 						}
 
 					}
