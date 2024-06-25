@@ -27,6 +27,7 @@ type indexSeekerIterator interface {
 type dataLookupFunc func(di uint64, g ArchiveGetter) ([]byte, []byte, error)
 type keyCmpFunc func(k []byte, di uint64, g ArchiveGetter) (int, []byte, error)
 
+// M limits amount of child for tree node.
 func NewBpsTree(kv ArchiveGetter, offt *eliasfano32.EliasFano, M uint64, dataLookup dataLookupFunc, keyCmp keyCmpFunc) *BpsTree {
 	bt := &BpsTree{M: M, offt: offt, dataLookupFunc: dataLookup, keyCmpFunc: keyCmp}
 	if err := bt.WarmUp(kv); err != nil {
@@ -111,49 +112,42 @@ type Node struct {
 	prefix []byte
 }
 
-func (b *BpsTree) traverse(g ArchiveGetter, mx [][]Node, n, di, i uint64) {
-	if i >= n {
-		return
-	}
-
-	for j := uint64(1); j <= b.M; j += b.M / 2 {
-		ik := i*b.M + j
-		if ik >= n {
-			break
-		}
-		_, k, err := b.keyCmpFunc(nil, ik, g)
-		if err != nil {
-			panic(err)
-		}
-		if k != nil {
-			mx[di] = append(mx[di], Node{off: b.offt.Get(ik), prefix: common.Copy(k), di: ik})
-			//fmt.Printf("d=%d k %x %d\n", di+1, k, offt)
-		}
-		b.traverse(g, mx, n, di, ik)
-	}
-}
-
 func (b *BpsTree) WarmUp(kv ArchiveGetter) error {
 	k := b.offt.Count()
-	d := logBase(k, b.M)
+	if k == 0 {
+		return nil
+	}
+	// d := logBase(k, b.M)
+	cacheEvery := uint64(2) // could increase to put more nodes into cache
+	mx := make([][]Node, 1) // usually d+1 but for experiments we put them all into flat list
 
-	mx := make([][]Node, d+1)
-	_, key, err := b.keyCmpFunc(nil, 0, kv)
-	if err != nil {
-		return err
+	l := int(0)
+	for ik := uint64(0); ik < k; ik += b.M / cacheEvery {
+		_, key, err := b.keyCmpFunc(nil, ik, kv)
+		if err != nil {
+			return err
+		}
+		if key != nil {
+			mx[l] = append(mx[l], Node{off: b.offt.Get(ik), prefix: common.Copy(key), di: ik})
+			// l++
+			// if l == len(mx) {
+			// 	l = 0
+			// }
+		}
 	}
-	if key != nil {
-		mx[0] = append(mx[0], Node{off: b.offt.Get(0), prefix: common.Copy(key)})
-		//fmt.Printf("d=%d k %x %d\n", di, k, offt)
-	}
-	b.traverse(kv, mx, k, 0, 0)
 
 	if b.trace {
+		c := 0
 		for i := 0; i < len(mx); i++ {
+			c += len(mx[i])
+			ll := make([]uint64, len(mx[i]))
 			for j := 0; j < len(mx[i]); j++ {
-				fmt.Printf("mx[%d][%d] %x %d %d\n", i, j, mx[i][j].prefix, mx[i][j].off, mx[i][j].di)
+				ll[j] = mx[i][j].di
+				// fmt.Printf("mx[%d][%d] %x %d %d\n", i, j, mx[i][j].prefix, mx[i][j].off, mx[i][j].di)
 			}
+			fmt.Printf("mx[%s][%d] %d %v\n", kv.FileName(), i, len(mx[i]), ll)
 		}
+		fmt.Printf("[cachedLookupMatrix %s] M: %d depth:%d; total offsets: %d; cached %d (%.2f%%);\n", kv.FileName(), b.M, len(mx), k, c, float64(c)/float64(k)*100)
 	}
 	b.mx = mx
 	return nil
