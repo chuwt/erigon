@@ -161,6 +161,8 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("tracing failed: %w", err)
 		}
+		tlogs := evm.IntraBlockState().(*state.IntraBlockState).GetLogs(txCtx.TxHash)
+		logger.Debug("[token tracing] tx logs", "logs", tlogs)
 		rawJson, err := tracer.(tracers.Tracer).GetResult()
 		if err != nil {
 			return nil, fmt.Errorf("get tracing result failed: %w", err)
@@ -174,7 +176,7 @@ func TraceTxToken(
 		// after getting the contract and address
 		// next we should check if the contracts are tokens by using balanceOf
 		tokenContract := NewTokenContract()
-		if err = tokenContract.Override().Override(ibs.(*state.IntraBlockState)); err != nil {
+		if err = tokenContract.Override().Override(evm.IntraBlockState().(*state.IntraBlockState)); err != nil {
 			return nil, fmt.Errorf("override failed: %w", err)
 		}
 		tokenCheckList := make([]libcommon.Address, 0)
