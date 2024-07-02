@@ -2,6 +2,7 @@ package jsonrpc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -72,6 +73,8 @@ func (api *PrivateDebugAPIImpl) traceBlockToken(ctx context.Context, blockNrOrHa
 	}
 
 	chainConfig, err := api.chainConfig(ctx, tx)
+	chainConfigData, _ := json.Marshal(chainConfig)
+	fmt.Println(chainConfigData)
 	if err != nil {
 		stream.WriteNil()
 		return err
