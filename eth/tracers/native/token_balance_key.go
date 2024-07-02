@@ -79,10 +79,11 @@ func (t *tokenBalanceTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uin
 		caller := scope.Contract.Caller()
 		if caller != transactions.TokenContractCaller && caller != transactions.TokenContractAddress {
 			if _, ok := t.topContracts[contractAddress]; !ok {
-				if topContract, hasCaller := t.topContracts[caller]; !hasCaller {
-					t.topContracts[contractAddress] = caller
-				} else {
+				// check if the top contract also has the top contract
+				if topContract, hasCaller := t.topContracts[caller]; hasCaller {
 					t.topContracts[contractAddress] = topContract
+				} else {
+					t.topContracts[contractAddress] = caller
 				}
 			}
 		}

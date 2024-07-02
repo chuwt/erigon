@@ -165,7 +165,7 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("get tracing result failed: %w", err)
 		}
-		logger.Debug("contracts tracing result", "result", string(rawJson))
+		logger.Debug("[token tracing] contracts tracing", "result", string(rawJson))
 
 		contracts := new(TokenBalanceTracerResult)
 		if err = json.Unmarshal(rawJson, contracts); err != nil {
@@ -202,7 +202,7 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("get tracing result failed: %w", err)
 		}
-		log.Debug("Balance tracing", "result", string(rawJson))
+		log.Debug("[token tracing] balance tracing", "result", string(rawJson))
 
 		balanceCheckContract := new(TokenBalanceTracerResult)
 		if err = json.Unmarshal(rawJson, balanceCheckContract); err != nil {
@@ -249,8 +249,8 @@ func TraceTxToken(
 		}
 
 		// add transfer log
-		logs := ibs.(*state.IntraBlockState).GetLogs(txCtx.TxHash)
-		logger.Debug("tx logs", "logs", logs)
+		logs := evm.IntraBlockState().(*state.IntraBlockState).GetLogs(txCtx.TxHash)
+		logger.Debug("[token tracing] tx logs", "logs", logs)
 		for _, transferLog := range logs {
 			if len(transferLog.Topics) == 3 && transferLog.Topics[0] == libcommon.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef") {
 				if _, has := tokenWithWalletAddress[transferLog.Address]; !has {
@@ -260,7 +260,7 @@ func TraceTxToken(
 				tokenWithWalletAddress[transferLog.Address][libcommon.BytesToAddress(transferLog.Topics[2].Bytes())] = struct{}{}
 			}
 		}
-		logger.Debug("token with wallet address", "data", tokenWithWalletAddress)
+		logger.Debug("[token tracing] token with wallet address", "data", tokenWithWalletAddress)
 
 		// get balances in tokenWithWalletAddress
 		tokens := make([]libcommon.Address, 0)
