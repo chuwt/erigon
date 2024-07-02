@@ -66,10 +66,15 @@ func (t *tokenBalanceTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uin
 	if t.interrupt.Load() {
 		return
 	}
+
+	contractAddress := scope.Contract.Address()
+	if _, ok := t.contracts[contractAddress]; !ok {
+		t.contracts[contractAddress] = make(map[string]struct{})
+	}
+
 	// here is the code only for token_contract.sol
 	// when we simulate the balanceOf of the contracts
 	// for other transaction or simulation, we won't use topContract
-	contractAddress := scope.Contract.Address()
 	if t.checkTop {
 		caller := scope.Contract.Caller()
 		if caller != transactions.TokenContractCaller && caller != transactions.TokenContractAddress {
@@ -90,10 +95,6 @@ func (t *tokenBalanceTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uin
 		offset := stackData[len(stackData)-1]
 		size := stackData[len(stackData)-2]
 		data := scope.Memory.GetCopy(int64(offset.Uint64()), int64(size.Uint64()))
-
-		if _, ok := t.contracts[contractAddress]; !ok {
-			t.contracts[contractAddress] = make(map[string]struct{})
-		}
 		t.contracts[contractAddress][hexutility.Encode(data)] = struct{}{}
 	}
 }

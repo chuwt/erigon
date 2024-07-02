@@ -259,6 +259,7 @@ func TraceTxToken(
 				tokenWithWalletAddress[transferLog.Address][libcommon.BytesToAddress(transferLog.Topics[2].Bytes())] = struct{}{}
 			}
 		}
+		logger.Debug("token with wallet address", "data", tokenWithWalletAddress)
 
 		// get balances in tokenWithWalletAddress
 		tokens := make([]libcommon.Address, 0)
