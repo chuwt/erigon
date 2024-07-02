@@ -469,6 +469,7 @@ func (api *PrivateDebugAPIImpl) TraceTransactionToken(ctx context.Context, hash 
 		)
 	}
 	// Trace the transaction and return
+	txCtx.TxHash = hash
 	return transactions.TraceTxToken(ctx, msg, blockCtx, txCtx, ibs, config, chainConfig, stream, api.evmCallTimeout)
 }
 
