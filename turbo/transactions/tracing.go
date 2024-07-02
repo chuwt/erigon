@@ -230,7 +230,7 @@ func TraceTxToken(
 								walletAddress := libcommon.HexToAddress(key[index : index+40])
 
 								// check if the contract has the top contract
-								if topContract, ok := contracts.TopContracts[contract]; ok {
+								if topContract, ok := balanceCheckContract.TopContracts[contract]; ok {
 									if _, has := tokenWithWalletAddress[topContract]; !has {
 										tokenWithWalletAddress[topContract] = make(map[libcommon.Address]struct{})
 									}
@@ -250,6 +250,7 @@ func TraceTxToken(
 
 		// add transfer log
 		logs := ibs.(*state.IntraBlockState).GetLogs(txCtx.TxHash)
+		logger.Debug("tx logs", "logs", logs)
 		for _, transferLog := range logs {
 			if len(transferLog.Topics) == 3 && transferLog.Topics[0] == libcommon.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef") {
 				if _, has := tokenWithWalletAddress[transferLog.Address]; !has {
