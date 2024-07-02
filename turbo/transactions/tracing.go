@@ -197,6 +197,7 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("get tracing result failed: %w", err)
 		}
+		fmt.Println(string(rawJson))
 		balanceCheckContract := new(TokenBalanceTracerResult)
 		if err = json.Unmarshal(rawJson, balanceCheckContract); err != nil {
 			return nil, fmt.Errorf("get tracing unmarshal failed: %w", err)
