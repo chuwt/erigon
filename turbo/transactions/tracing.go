@@ -144,6 +144,8 @@ func TraceTxToken(
 	stream *jsoniter.Stream,
 	callTimeout time.Duration,
 ) error {
+	tracerString := "tokenBalanceTracer"
+	config.Tracer = &tracerString
 	tracer, streaming, cancel, err := AssembleTracer(ctx, config, txCtx.TxHash, stream, callTimeout)
 	if err != nil {
 		stream.WriteNil()
@@ -153,6 +155,7 @@ func TraceTxToken(
 	defer cancel()
 
 	execCb := func(evm *vm.EVM, refunds bool) (json.RawMessage, error) {
+		logger := log.New("token tracing")
 		gp := new(core.GasPool).AddGas(message.Gas()).AddBlobGas(message.BlobGas())
 		_, err = core.ApplyMessage(evm, message, gp, refunds, false /* gasBailout */)
 		if err != nil {
@@ -162,6 +165,8 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("get tracing result failed: %w", err)
 		}
+		logger.Debug("contracts tracing result", "result", string(rawJson))
+
 		contracts := new(TokenBalanceTracerResult)
 		if err = json.Unmarshal(rawJson, contracts); err != nil {
 			return nil, fmt.Errorf("get tracing unmarshal failed: %w", err)
@@ -197,7 +202,8 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("get tracing result failed: %w", err)
 		}
-		fmt.Println(string(rawJson))
+		log.Debug("Balance tracing", "result", string(rawJson))
+
 		balanceCheckContract := new(TokenBalanceTracerResult)
 		if err = json.Unmarshal(rawJson, balanceCheckContract); err != nil {
 			return nil, fmt.Errorf("get tracing unmarshal failed: %w", err)
