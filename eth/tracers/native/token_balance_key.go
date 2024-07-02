@@ -106,13 +106,6 @@ type TokenBalanceResult struct {
 // GetResult returns the json-encoded nested list of call traces, and any
 // error arising from the encoding or forceful termination (via `Stop`).
 func (t *tokenBalanceTracer) GetResult() (json.RawMessage, error) {
-	// remove empty key
-	for k, v := range t.contracts {
-		if len(v) == 0 {
-			delete(t.contracts, k)
-		}
-	}
-
 	contracts := make(map[common.Address][]string)
 	for k, vs := range t.contracts {
 		contracts[k] = make([]string, 0)

@@ -155,7 +155,7 @@ func TraceTxToken(
 	defer cancel()
 
 	execCb := func(evm *vm.EVM, refunds bool) (json.RawMessage, error) {
-		logger := log.New("token tracing")
+		logger := log.New()
 		gp := new(core.GasPool).AddGas(message.Gas()).AddBlobGas(message.BlobGas())
 		_, err = core.ApplyMessage(evm, message, gp, refunds, false /* gasBailout */)
 		if err != nil {
