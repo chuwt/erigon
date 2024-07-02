@@ -157,12 +157,11 @@ func TraceTxToken(
 	execCb := func(evm *vm.EVM, refunds bool) (json.RawMessage, error) {
 		logger := log.New()
 		gp := new(core.GasPool).AddGas(message.Gas()).AddBlobGas(message.BlobGas())
-		_, err = core.ApplyMessage(evm, message, gp, refunds, false /* gasBailout */)
+		logs, err := core.ApplyMessageReceipt(evm, message, gp, refunds, false /* gasBailout */, txCtx.TxHash)
 		if err != nil {
 			return nil, fmt.Errorf("tracing failed: %w", err)
 		}
-		tlogs := evm.IntraBlockState().(*state.IntraBlockState).GetLogs(txCtx.TxHash)
-		logger.Debug("[token tracing] tx logs", "logs", tlogs)
+		logger.Debug("[token tracing] tx logs", "logs", logs)
 		rawJson, err := tracer.(tracers.Tracer).GetResult()
 		if err != nil {
 			return nil, fmt.Errorf("get tracing result failed: %w", err)
@@ -251,8 +250,8 @@ func TraceTxToken(
 		}
 
 		// add transfer log
-		logs := evm.IntraBlockState().(*state.IntraBlockState).GetLogs(txCtx.TxHash)
-		logger.Debug("[token tracing] tx logs", "logs", logs)
+		//logs := evm.IntraBlockState().(*state.IntraBlockState).GetLogs(txCtx.TxHash)
+		//logger.Debug("[token tracing] tx logs", "logs", logs)
 		for _, transferLog := range logs {
 			if len(transferLog.Topics) == 3 && transferLog.Topics[0] == libcommon.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef") {
 				if _, has := tokenWithWalletAddress[transferLog.Address]; !has {

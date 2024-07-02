@@ -18,6 +18,8 @@ package core
 
 import (
 	"fmt"
+	"github.com/ledgerwatch/erigon/core/state"
+	"github.com/ledgerwatch/erigon/core/types"
 
 	"github.com/holiman/uint256"
 	libcommon "github.com/ledgerwatch/erigon-lib/common"
@@ -182,6 +184,15 @@ func NewStateTransition(evm *vm.EVM, msg Message, gp *GasPool) *StateTransition 
 // for trace_call to replicate OE/Parity behaviour
 func ApplyMessage(evm *vm.EVM, msg Message, gp *GasPool, refunds bool, gasBailout bool) (*ExecutionResult, error) {
 	return NewStateTransition(evm, msg, gp).TransitionDb(refunds, gasBailout)
+}
+
+func ApplyMessageReceipt(evm *vm.EVM, msg Message, gp *GasPool, refunds bool, gasBailout bool, txHash libcommon.Hash) ([]*types.Log, error) {
+	nst := NewStateTransition(evm, msg, gp)
+	_, err := nst.TransitionDb(refunds, gasBailout)
+	if err != nil {
+		return nil, err
+	}
+	return nst.state.(*state.IntraBlockState).GetLogs(txHash), nil
 }
 
 // to returns the recipient of the message.
