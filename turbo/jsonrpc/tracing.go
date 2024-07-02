@@ -32,6 +32,10 @@ func (api *PrivateDebugAPIImpl) TraceBlockTokenByNumber(ctx context.Context, blo
 	return api.traceBlockToken(ctx, rpc.BlockNumberOrHashWithNumber(blockNum), config, stream)
 }
 
+func (api *PrivateDebugAPIImpl) TraceBlockTokenByHash(ctx context.Context, hash common.Hash, config *tracers.TraceConfig, stream *jsoniter.Stream) error {
+	return api.traceBlock(ctx, rpc.BlockNumberOrHashWithHash(hash, true), config, stream)
+}
+
 func (api *PrivateDebugAPIImpl) traceBlockToken(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash, config *tracers.TraceConfig, stream *jsoniter.Stream) error {
 	tx, err := api.db.BeginRo(ctx)
 	if err != nil {
@@ -77,6 +81,7 @@ func (api *PrivateDebugAPIImpl) traceBlockToken(ctx context.Context, blockNrOrHa
 		stream.WriteNil()
 		return err
 	}
+	// avoid invalid opcode: SHR
 	chainConfig.ByzantiumBlock = big.NewInt(0)
 	chainConfig.ConstantinopleBlock = big.NewInt(0)
 	engine := api.engine()
@@ -371,6 +376,9 @@ func (api *PrivateDebugAPIImpl) TraceTransactionToken(ctx context.Context, hash 
 		stream.WriteNil()
 		return err
 	}
+	// avoid invalid opcode: SHR
+	chainConfig.ByzantiumBlock = big.NewInt(0)
+	chainConfig.ConstantinopleBlock = big.NewInt(0)
 	// Retrieve the transaction and assemble its EVM context
 	var isBorStateSyncTxn bool
 	blockNum, ok, err := api.txnLookup(ctx, tx, hash)
