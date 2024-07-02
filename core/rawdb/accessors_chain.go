@@ -26,10 +26,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/gballet/go-verkle"
-
-	"github.com/ledgerwatch/erigon-lib/log/v3"
-
 	"github.com/ledgerwatch/erigon-lib/common"
 	"github.com/ledgerwatch/erigon-lib/common/dbg"
 	"github.com/ledgerwatch/erigon-lib/common/hexutility"
@@ -603,7 +599,7 @@ func ReadBody(db kv.Getter, hash common.Hash, number uint64) (*types.Body, uint6
 	if bodyForStorage.TxCount < 2 {
 		panic(fmt.Sprintf("block body hash too few txs amount: %d, %d", number, bodyForStorage.TxCount))
 	}
-	return body, bodyForStorage.BaseTxnID.First(), bodyForStorage.TxCount - 2 // 1 system txn in the begining of block, and 1 at the end
+	return body, bodyForStorage.BaseTxnID.First(), bodyForStorage.TxCount - 2 // 1 system txn in the beginning of block, and 1 at the end
 }
 
 func HasSenders(db kv.Getter, hash common.Hash, number uint64) (bool, error) {

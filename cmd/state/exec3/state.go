@@ -2,11 +2,10 @@ package exec3
 
 import (
 	"context"
+	"log"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
-
-	"github.com/ledgerwatch/erigon-lib/log/v3"
 
 	"github.com/ledgerwatch/erigon-lib/common/datadir"
 	"github.com/ledgerwatch/erigon/eth/consensuschain"
@@ -122,7 +121,7 @@ func (rw *Worker) RunTxTask(txTask *state.TxTask) {
 	rw.RunTxTaskNoLock(txTask)
 }
 
-// Needed to set hisotry reader when need to offset few txs from block beginning and does not break processing,
+// Needed to set history reader when need to offset few txs from block beginning and does not break processing,
 // like compute gas used for block and then to set state reader to continue processing on latest data.
 func (rw *Worker) SetReader(reader state.ResettableStateReader) {
 	rw.stateReader = reader
