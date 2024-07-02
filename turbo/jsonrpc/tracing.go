@@ -2,8 +2,8 @@ package jsonrpc
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/holiman/uint256"
@@ -73,12 +73,12 @@ func (api *PrivateDebugAPIImpl) traceBlockToken(ctx context.Context, blockNrOrHa
 	}
 
 	chainConfig, err := api.chainConfig(ctx, tx)
-	chainConfigData, _ := json.Marshal(chainConfig)
-	fmt.Println(chainConfigData)
 	if err != nil {
 		stream.WriteNil()
 		return err
 	}
+	chainConfig.ByzantiumBlock = big.NewInt(0)
+	chainConfig.ConstantinopleBlock = big.NewInt(0)
 	engine := api.engine()
 
 	_, blockCtx, _, ibs, _, err := transactions.ComputeTxEnv(ctx, engine, block, chainConfig, api._blockReader, tx, 0, api.historyV3(tx))
