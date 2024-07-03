@@ -163,7 +163,7 @@ func TraceTxToken(
 		}
 
 		logs := evm.IntraBlockState().(*state.IntraBlockState).GetLogs(txCtx.TxHash)
-		logger.Debug("[token tracing] tx logs", "logs", logs)
+		logger.Debug("[token tracing] tx logs", "count", len(logs))
 
 		rawJson, err := tracer.(tracers.Tracer).GetResult()
 		if err != nil {
