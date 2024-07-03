@@ -66,18 +66,24 @@ func (t *tokenBalanceTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uin
 	if t.interrupt.Load() {
 		return
 	}
+
+	contractAddress := scope.Contract.Address()
+	if _, ok := t.contracts[contractAddress]; !ok {
+		t.contracts[contractAddress] = make(map[string]struct{})
+	}
+
 	// here is the code only for token_contract.sol
 	// when we simulate the balanceOf of the contracts
 	// for other transaction or simulation, we won't use topContract
-	contractAddress := scope.Contract.Address()
 	if t.checkTop {
 		caller := scope.Contract.Caller()
 		if caller != transactions.TokenContractCaller && caller != transactions.TokenContractAddress {
 			if _, ok := t.topContracts[contractAddress]; !ok {
-				if topContract, hasCaller := t.topContracts[caller]; !hasCaller {
-					t.topContracts[contractAddress] = caller
-				} else {
+				// check if the top contract also has the top contract
+				if topContract, hasCaller := t.topContracts[caller]; hasCaller {
 					t.topContracts[contractAddress] = topContract
+				} else {
+					t.topContracts[contractAddress] = caller
 				}
 			}
 		}
@@ -90,10 +96,6 @@ func (t *tokenBalanceTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uin
 		offset := stackData[len(stackData)-1]
 		size := stackData[len(stackData)-2]
 		data := scope.Memory.GetCopy(int64(offset.Uint64()), int64(size.Uint64()))
-
-		if _, ok := t.contracts[contractAddress]; !ok {
-			t.contracts[contractAddress] = make(map[string]struct{})
-		}
 		t.contracts[contractAddress][hexutility.Encode(data)] = struct{}{}
 	}
 }
@@ -106,13 +108,6 @@ type TokenBalanceResult struct {
 // GetResult returns the json-encoded nested list of call traces, and any
 // error arising from the encoding or forceful termination (via `Stop`).
 func (t *tokenBalanceTracer) GetResult() (json.RawMessage, error) {
-	// remove empty key
-	for k, v := range t.contracts {
-		if len(v) == 0 {
-			delete(t.contracts, k)
-		}
-	}
-
 	contracts := make(map[common.Address][]string)
 	for k, vs := range t.contracts {
 		contracts[k] = make([]string, 0)

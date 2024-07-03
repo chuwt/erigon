@@ -144,6 +144,8 @@ func TraceTxToken(
 	stream *jsoniter.Stream,
 	callTimeout time.Duration,
 ) error {
+	tracerString := "tokenBalanceTracer"
+	config.Tracer = &tracerString
 	tracer, streaming, cancel, err := AssembleTracer(ctx, config, txCtx.TxHash, stream, callTimeout)
 	if err != nil {
 		stream.WriteNil()
@@ -153,15 +155,19 @@ func TraceTxToken(
 	defer cancel()
 
 	execCb := func(evm *vm.EVM, refunds bool) (json.RawMessage, error) {
+		logger := log.New()
 		gp := new(core.GasPool).AddGas(message.Gas()).AddBlobGas(message.BlobGas())
-		_, err = core.ApplyMessage(evm, message, gp, refunds, false /* gasBailout */)
+		logs, err := core.ApplyMessageReceipt(evm, message, gp, refunds, false /* gasBailout */, txCtx.TxHash)
 		if err != nil {
 			return nil, fmt.Errorf("tracing failed: %w", err)
 		}
+		logger.Debug("[token tracing] tx logs", "logs", logs)
 		rawJson, err := tracer.(tracers.Tracer).GetResult()
 		if err != nil {
 			return nil, fmt.Errorf("get tracing result failed: %w", err)
 		}
+		logger.Debug("[token tracing] contracts tracing", "result", string(rawJson))
+
 		contracts := new(TokenBalanceTracerResult)
 		if err = json.Unmarshal(rawJson, contracts); err != nil {
 			return nil, fmt.Errorf("get tracing unmarshal failed: %w", err)
@@ -169,7 +175,7 @@ func TraceTxToken(
 		// after getting the contract and address
 		// next we should check if the contracts are tokens by using balanceOf
 		tokenContract := NewTokenContract()
-		if err = tokenContract.Override().Override(ibs.(*state.IntraBlockState)); err != nil {
+		if err = tokenContract.Override().Override(evm.IntraBlockState().(*state.IntraBlockState)); err != nil {
 			return nil, fmt.Errorf("override failed: %w", err)
 		}
 		tokenCheckList := make([]libcommon.Address, 0)
@@ -197,6 +203,8 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("get tracing result failed: %w", err)
 		}
+		log.Debug("[token tracing] balance tracing", "result", string(rawJson))
+
 		balanceCheckContract := new(TokenBalanceTracerResult)
 		if err = json.Unmarshal(rawJson, balanceCheckContract); err != nil {
 			return nil, fmt.Errorf("get tracing unmarshal failed: %w", err)
@@ -223,7 +231,7 @@ func TraceTxToken(
 								walletAddress := libcommon.HexToAddress(key[index : index+40])
 
 								// check if the contract has the top contract
-								if topContract, ok := contracts.TopContracts[contract]; ok {
+								if topContract, ok := balanceCheckContract.TopContracts[contract]; ok {
 									if _, has := tokenWithWalletAddress[topContract]; !has {
 										tokenWithWalletAddress[topContract] = make(map[libcommon.Address]struct{})
 									}
@@ -242,7 +250,8 @@ func TraceTxToken(
 		}
 
 		// add transfer log
-		logs := ibs.(*state.IntraBlockState).GetLogs(txCtx.TxHash)
+		//logs := evm.IntraBlockState().(*state.IntraBlockState).GetLogs(txCtx.TxHash)
+		//logger.Debug("[token tracing] tx logs", "logs", logs)
 		for _, transferLog := range logs {
 			if len(transferLog.Topics) == 3 && transferLog.Topics[0] == libcommon.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef") {
 				if _, has := tokenWithWalletAddress[transferLog.Address]; !has {
@@ -252,6 +261,7 @@ func TraceTxToken(
 				tokenWithWalletAddress[transferLog.Address][libcommon.BytesToAddress(transferLog.Topics[2].Bytes())] = struct{}{}
 			}
 		}
+		logger.Debug("[token tracing] token with wallet address", "data", tokenWithWalletAddress)
 
 		// get balances in tokenWithWalletAddress
 		tokens := make([]libcommon.Address, 0)
