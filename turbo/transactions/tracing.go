@@ -157,11 +157,14 @@ func TraceTxToken(
 	execCb := func(evm *vm.EVM, refunds bool) (json.RawMessage, error) {
 		logger := log.New()
 		gp := new(core.GasPool).AddGas(message.Gas()).AddBlobGas(message.BlobGas())
-		logs, err := core.ApplyMessageReceipt(evm, message, gp, refunds, false /* gasBailout */, txCtx.TxHash)
+		_, err = core.ApplyMessage(evm, message, gp, refunds, false /* gasBailout */)
 		if err != nil {
 			return nil, fmt.Errorf("tracing failed: %w", err)
 		}
-		logger.Debug("[token tracing] tx logs", "logs", logs)
+
+		logs := evm.IntraBlockState().(*state.IntraBlockState).GetLogs(txCtx.TxHash)
+		logger.Debug("[token tracing] tx logs", "count", len(logs))
+
 		rawJson, err := tracer.(tracers.Tracer).GetResult()
 		if err != nil {
 			return nil, fmt.Errorf("get tracing result failed: %w", err)
