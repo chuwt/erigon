@@ -130,6 +130,11 @@ type TokenBalanceTracerResult struct {
 	TopContracts map[libcommon.Address]libcommon.Address `json:"top_contracts"`
 }
 
+type BalanceResult struct {
+	Balance map[libcommon.Address]map[libcommon.Address]*big.Int `json:"balance"`
+	Token   []*TokenInfo                                         `json:"token"`
+}
+
 type TokenInfo struct {
 	TokenAddress libcommon.Address `json:"contract_address"`
 	Name         string            `json:"name"`
@@ -342,10 +347,13 @@ func TraceTxToken(
 				Decimals:     new(big.Int).SetBytes(decimal[i]),
 				TotalSupply:  new(big.Int).SetBytes(totalSupply[i]),
 			})
-
+		}
+		br := BalanceResult{
+			Balance: balanceResult,
+			Token:   tokenInfos,
 		}
 
-		return json.Marshal(balanceResult)
+		return json.Marshal(br)
 	}
 
 	evm := vm.NewEVM(blockCtx, txCtx, ibs, chainConfig, vm.Config{Debug: true, Tracer: tracer, NoBaseFee: true})
