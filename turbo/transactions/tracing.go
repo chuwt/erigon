@@ -331,7 +331,6 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("call balance data failed: %w", err)
 		}
-		log.Debug("contract result", "names", contractResult[0])
 		name := make([]string, 0)
 		symbol := make([]string, 0)
 		decimal := make([]*big.Int, 0)
