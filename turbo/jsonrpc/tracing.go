@@ -33,7 +33,7 @@ func (api *PrivateDebugAPIImpl) TraceBlockTokenByNumber(ctx context.Context, blo
 }
 
 func (api *PrivateDebugAPIImpl) TraceBlockTokenByHash(ctx context.Context, hash common.Hash, config *tracers.TraceConfig, stream *jsoniter.Stream) error {
-	return api.traceBlock(ctx, rpc.BlockNumberOrHashWithHash(hash, true), config, stream)
+	return api.traceBlockToken(ctx, rpc.BlockNumberOrHashWithHash(hash, true), config, stream)
 }
 
 func (api *PrivateDebugAPIImpl) traceBlockToken(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash, config *tracers.TraceConfig, stream *jsoniter.Stream) error {
