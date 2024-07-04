@@ -328,7 +328,7 @@ func TraceTxToken(
 		symbol := make([][]byte, 0)
 		decimal := make([][]byte, 0)
 		totalSupply := make([][]byte, 0)
-		result := contractResult[0].([][]byte)
+		result := contractResult[0].([]interface{})
 		abi.ConvertType(result[0], &name)
 		abi.ConvertType(result[1], &symbol)
 		abi.ConvertType(result[2], &decimal)
