@@ -26,7 +26,7 @@ func TestBigInt(t *testing.T) {
 }
 
 func TestTrim(t *testing.T) {
-	str := strings.TrimLeft(" \rWrapped Ether", " ")
-	str = strings.TrimLeft(str, "\r")
+	str := strings.TrimLeft(" \r \nWrapped Ether", " ")
+	str = strings.TrimLeft(str, "\r\n")
 	t.Log(str)
 }

@@ -329,6 +329,7 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("call balance data failed: %w", err)
 		}
+		log.Debug("contract result", "names", contractResult[0])
 		name := make([]string, 0)
 		symbol := make([]string, 0)
 		decimal := make([][]byte, 0)
@@ -340,11 +341,6 @@ func TraceTxToken(
 
 		tokenInfos := make([]*TokenInfo, 0)
 		for i, tokenAddress := range tokens {
-			name[i] = strings.TrimSpace(name[i])
-			name[i] = strings.TrimLeft(name[i], "\r")
-			symbol[i] = strings.TrimSpace(symbol[i])
-			symbol[i] = strings.TrimLeft(symbol[i], "\r")
-
 			tokenInfos = append(tokenInfos, &TokenInfo{
 				TokenAddress: tokenAddress,
 				Name:         name[i],
