@@ -324,7 +324,6 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("call balance data failed: %w", err)
 		}
-		log.Debug("contract result", contractResult)
 		name := make([][]byte, 0)
 		symbol := make([][]byte, 0)
 		decimal := make([][]byte, 0)
@@ -333,13 +332,14 @@ func TraceTxToken(
 		abi.ConvertType(contractResult[1], &symbol)
 		abi.ConvertType(contractResult[2], &decimal)
 		abi.ConvertType(contractResult[3], &totalSupply)
-		for _, tokenAddress := range tokens {
+		for i, tokenAddress := range tokens {
 			log.Debug("token info",
 				"token", tokenAddress.String(),
-				"name", string(name[0]),
-				"symbol", string(symbol[0]),
-				"decimals", new(big.Int).SetBytes(decimal[0]).String(),
-				"totalSupply", new(big.Int).SetBytes(totalSupply[0]).String(),
+				"name", string(name[i]),
+				"name2", name[i],
+				"symbol", string(symbol[i]),
+				"decimals", new(big.Int).SetBytes(decimal[i]).String(),
+				"totalSupply", new(big.Int).SetBytes(totalSupply[i]).String(),
 			)
 		}
 
