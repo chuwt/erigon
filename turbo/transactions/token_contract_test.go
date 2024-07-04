@@ -5,6 +5,7 @@ import (
 	"fmt"
 	libcommon "github.com/ledgerwatch/erigon-lib/common"
 	"math/big"
+	"strings"
 	"testing"
 )
 
@@ -17,4 +18,15 @@ func TestJson(t *testing.T) {
 	balanceResult := make(map[libcommon.Address]map[libcommon.Address]*big.Int)
 	data, err := json.Marshal(balanceResult)
 	fmt.Println(string(data), err)
+}
+
+func TestBigInt(t *testing.T) {
+	bigNumber := new(big.Int).SetBytes([]byte{})
+	t.Log(bigNumber.String())
+}
+
+func TestTrim(t *testing.T) {
+	str := strings.TrimLeft(" \r \nWrapped Ether", " ")
+	str = strings.TrimLeft(str, "\r\n")
+	t.Log(str)
 }

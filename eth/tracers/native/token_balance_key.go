@@ -102,7 +102,7 @@ func (t *tokenBalanceTracer) CaptureState(pc uint64, op vm.OpCode, gas, cost uin
 
 type TokenBalanceResult struct {
 	Contracts    map[common.Address][]string       `json:"contracts"`
-	TopContracts map[common.Address]common.Address `json:"topContracts"`
+	TopContracts map[common.Address]common.Address `json:"top_contracts"`
 }
 
 // GetResult returns the json-encoded nested list of call traces, and any
