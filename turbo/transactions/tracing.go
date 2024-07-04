@@ -324,15 +324,15 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("call balance data failed: %w", err)
 		}
+		log.Debug("contract result", contractResult)
 		name := make([][]byte, 0)
 		symbol := make([][]byte, 0)
 		decimal := make([][]byte, 0)
 		totalSupply := make([][]byte, 0)
-		result := contractResult[0].([]interface{})
-		abi.ConvertType(result[0], &name)
-		abi.ConvertType(result[1], &symbol)
-		abi.ConvertType(result[2], &decimal)
-		abi.ConvertType(result[3], &totalSupply)
+		abi.ConvertType(contractResult[0], &name)
+		abi.ConvertType(contractResult[1], &symbol)
+		abi.ConvertType(contractResult[2], &decimal)
+		abi.ConvertType(contractResult[3], &totalSupply)
 		for _, tokenAddress := range tokens {
 			log.Debug("token info",
 				"token", tokenAddress.String(),
