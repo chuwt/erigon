@@ -340,6 +340,11 @@ func TraceTxToken(
 
 		tokenInfos := make([]*TokenInfo, 0)
 		for i, tokenAddress := range tokens {
+			name[i] = strings.TrimSpace(name[i])
+			name[i] = strings.TrimLeft(name[i], "\r")
+			symbol[i] = strings.TrimSpace(symbol[i])
+			symbol[i] = strings.TrimLeft(symbol[i], "\r")
+
 			tokenInfos = append(tokenInfos, &TokenInfo{
 				TokenAddress: tokenAddress,
 				Name:         name[i],
