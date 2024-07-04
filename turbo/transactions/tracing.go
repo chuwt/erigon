@@ -324,8 +324,8 @@ func TraceTxToken(
 		if err != nil {
 			return nil, fmt.Errorf("call balance data failed: %w", err)
 		}
-		name := make([][]byte, 0)
-		symbol := make([][]byte, 0)
+		name := make([]string, 0)
+		symbol := make([]string, 0)
 		decimal := make([][]byte, 0)
 		totalSupply := make([][]byte, 0)
 		abi.ConvertType(contractResult[0], &name)
