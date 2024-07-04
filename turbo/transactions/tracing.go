@@ -136,11 +136,13 @@ type BalanceResult struct {
 }
 
 type TokenInfo struct {
-	TokenAddress libcommon.Address `json:"contract_address"`
-	Name         string            `json:"name"`
-	Symbol       string            `json:"symbol"`
-	Decimals     *big.Int          `json:"decimals"`
-	TotalSupply  *big.Int          `json:"total_supply"`
+	TokenAddress   libcommon.Address `json:"contract_address"`
+	Name           string            `json:"name"`
+	Symbol         string            `json:"symbol"`
+	Decimals       *big.Int          `json:"decimals"`
+	HasDecimals    bool              `json:"has_decimals"`
+	TotalSupply    *big.Int          `json:"total_supply"`
+	HasTotalSupply bool              `json:"has_total_supply"`
 }
 
 // TraceTxToken configures a new tracer according to the provided configuration, and
@@ -332,21 +334,27 @@ func TraceTxToken(
 		log.Debug("contract result", "names", contractResult[0])
 		name := make([]string, 0)
 		symbol := make([]string, 0)
-		decimal := make([][]byte, 0)
-		totalSupply := make([][]byte, 0)
+		decimal := make([]*big.Int, 0)
+		hasDecimal := make([]bool, 0)
+		totalSupply := make([]*big.Int, 0)
+		hasTotalSupply := make([]bool, 0)
 		abi.ConvertType(contractResult[0], &name)
 		abi.ConvertType(contractResult[1], &symbol)
 		abi.ConvertType(contractResult[2], &decimal)
-		abi.ConvertType(contractResult[3], &totalSupply)
+		abi.ConvertType(contractResult[3], &hasDecimal)
+		abi.ConvertType(contractResult[4], &totalSupply)
+		abi.ConvertType(contractResult[5], &hasTotalSupply)
 
 		tokenInfos := make([]*TokenInfo, 0)
 		for i, tokenAddress := range tokens {
 			tokenInfos = append(tokenInfos, &TokenInfo{
-				TokenAddress: tokenAddress,
-				Name:         name[i],
-				Symbol:       symbol[i],
-				Decimals:     new(big.Int).SetBytes(decimal[i]),
-				TotalSupply:  new(big.Int).SetBytes(totalSupply[i]),
+				TokenAddress:   tokenAddress,
+				Name:           name[i],
+				Symbol:         symbol[i],
+				Decimals:       decimal[i],
+				HasDecimals:    hasDecimal[i],
+				TotalSupply:    totalSupply[i],
+				HasTotalSupply: hasTotalSupply[i],
 			})
 		}
 		br := BalanceResult{
