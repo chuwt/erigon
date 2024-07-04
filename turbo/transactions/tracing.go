@@ -332,15 +332,17 @@ func TraceTxToken(
 		abi.ConvertType(contractResult[1], &symbol)
 		abi.ConvertType(contractResult[2], &decimal)
 		abi.ConvertType(contractResult[3], &totalSupply)
+
+		tokenInfos := make([]*TokenInfo, 0)
 		for i, tokenAddress := range tokens {
-			log.Debug("token info",
-				"token", tokenAddress.String(),
-				"name", string(name[i]),
-				"name2", name[i],
-				"symbol", string(symbol[i]),
-				"decimals", new(big.Int).SetBytes(decimal[i]).String(),
-				"totalSupply", new(big.Int).SetBytes(totalSupply[i]).String(),
-			)
+			tokenInfos = append(tokenInfos, &TokenInfo{
+				TokenAddress: tokenAddress,
+				Name:         name[i],
+				Symbol:       symbol[i],
+				Decimals:     new(big.Int).SetBytes(decimal[i]),
+				TotalSupply:  new(big.Int).SetBytes(totalSupply[i]),
+			})
+
 		}
 
 		return json.Marshal(balanceResult)
