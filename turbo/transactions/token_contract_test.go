@@ -18,3 +18,8 @@ func TestJson(t *testing.T) {
 	data, err := json.Marshal(balanceResult)
 	fmt.Println(string(data), err)
 }
+
+func TestBigInt(t *testing.T) {
+	bigNumber := new(big.Int).SetBytes([]byte{})
+	t.Log(bigNumber.String())
+}

@@ -127,7 +127,15 @@ func ComputeTxEnv(ctx context.Context, engine consensus.EngineReader, block *typ
 
 type TokenBalanceTracerResult struct {
 	Contracts    map[libcommon.Address][]string          `json:"contracts"`
-	TopContracts map[libcommon.Address]libcommon.Address `json:"topContracts"`
+	TopContracts map[libcommon.Address]libcommon.Address `json:"top_contracts"`
+}
+
+type TokenInfo struct {
+	TokenAddress libcommon.Address `json:"contract_address"`
+	Name         string            `json:"name"`
+	Symbol       string            `json:"symbol"`
+	Decimals     *big.Int          `json:"decimals"`
+	TotalSupply  *big.Int          `json:"total_supply"`
 }
 
 // TraceTxToken configures a new tracer according to the provided configuration, and
@@ -253,8 +261,6 @@ func TraceTxToken(
 		}
 
 		// add transfer log
-		//logs := evm.IntraBlockState().(*state.IntraBlockState).GetLogs(txCtx.TxHash)
-		//logger.Debug("[token tracing] tx logs", "logs", logs)
 		for _, transferLog := range logs {
 			if len(transferLog.Topics) == 3 && transferLog.Topics[0] == libcommon.HexToHash("0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef") {
 				if _, has := tokenWithWalletAddress[transferLog.Address]; !has {
@@ -303,6 +309,40 @@ func TraceTxToken(
 				balanceResult[tokenAddress][tokenWallets[index][balIndex]] = bal
 			}
 		}
+
+		// token info
+		data, err = tokenContract.abi.Pack("tokenInfo", tokens)
+		if err != nil {
+			return nil, fmt.Errorf("pack tokenInfo failed: %w", err)
+		}
+		// get wallet balance
+		rawTokenInfo, _, err = evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 50_000_000_000)
+		if err != nil {
+			return nil, fmt.Errorf("check token info failed: %w", err)
+		}
+		contractResult, err = tokenContract.abi.Unpack("tokenInfo", rawTokenInfo)
+		if err != nil {
+			return nil, fmt.Errorf("call balance data failed: %w", err)
+		}
+		name := make([][]byte, 0)
+		symbol := make([][]byte, 0)
+		decimal := make([][]byte, 0)
+		totalSupply := make([][]byte, 0)
+		result := contractResult[0].([][]byte)
+		abi.ConvertType(result[0], &name)
+		abi.ConvertType(result[1], &symbol)
+		abi.ConvertType(result[2], &decimal)
+		abi.ConvertType(result[3], &totalSupply)
+		for _, tokenAddress := range tokens {
+			log.Debug("token info",
+				"token", tokenAddress.String(),
+				"name", string(name[0]),
+				"symbol", string(symbol[0]),
+				"decimals", new(big.Int).SetBytes(decimal[0]).String(),
+				"totalSupply", new(big.Int).SetBytes(totalSupply[0]).String(),
+			)
+		}
+
 		return json.Marshal(balanceResult)
 	}
 
