@@ -205,16 +205,25 @@ func TraceTxToken(
 			return nil, fmt.Errorf("gen balance data failed: %w", err)
 		}
 
-		rawTokenInfo, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 50_000_000_000)
+		rawBalance, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 5_000_000_000_000)
 		if err != nil {
 			return nil, fmt.Errorf("check token failed: %w", err)
 		}
 
-		// todo, check if the balanceOf success
-		contractResult, err := tokenContract.abi.Unpack("balance", rawTokenInfo)
+		// check if the balanceOf success
+		contractResult, err := tokenContract.abi.Unpack("balance", rawBalance)
 		if err != nil {
 			return nil, fmt.Errorf("call balance data failed: %w", err)
 		}
+		// balanceOf mapping
+		hasBalanceOf := make([]bool, 0)
+		abi.ConvertType(contractResult[0], &hasBalanceOf)
+		tokenHasBalanceOf := make(map[libcommon.Address]bool)
+		for index, address := range tokenCheckList {
+			tokenHasBalanceOf[address] = hasBalanceOf[index]
+		}
+		balanceOfResult, _ := json.Marshal(tokenHasBalanceOf)
+		log.Debug("[token tracing] balance result", "result", string(balanceOfResult))
 
 		// get the result of the tracer
 		rawJson, err = tracer.(tracers.Tracer).GetResult()
@@ -233,6 +242,10 @@ func TraceTxToken(
 		// compare the balanceCheckContract to get the tokens
 		tokenWithWalletAddress := make(map[libcommon.Address]map[libcommon.Address]struct{})
 		for contract, values := range balanceCheckContract.Contracts {
+			// ignore the contract which doesn't have balanceOf function
+			if _falseResult, _hasBalanceOf := tokenHasBalanceOf[contract]; !_hasBalanceOf || !_falseResult {
+				continue
+			}
 			for _, value := range values {
 				stateKeyData, _ := strings.CutPrefix(strings.ToLower(value), "0x")
 				containsAddress, _ := strings.CutPrefix(strings.ToLower(tokenContract.address.String()), "0x")
@@ -295,7 +308,7 @@ func TraceTxToken(
 			return nil, fmt.Errorf("pack tokenBalance failed: %w", err)
 		}
 		// get wallet balance
-		rawWalletBalance, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 50_000_000_000)
+		rawWalletBalance, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 5_000_000_000_000)
 		if err != nil {
 			return nil, fmt.Errorf("check token failed: %w", err)
 		}
@@ -323,7 +336,7 @@ func TraceTxToken(
 			return nil, fmt.Errorf("pack tokenInfo failed: %w", err)
 		}
 		// get wallet balance
-		rawTokenInfo, _, err = evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 50_000_000_000)
+		rawTokenInfo, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 5_000_000_000_000)
 		if err != nil {
 			return nil, fmt.Errorf("check token info failed: %w", err)
 		}
