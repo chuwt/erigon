@@ -323,7 +323,7 @@ func TraceTxToken(
 			return nil, fmt.Errorf("pack tokenInfo failed: %w", err)
 		}
 		// get wallet balance
-		rawTokenInfo, _, err = evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 50_000_000_000)
+		rawTokenInfo, _, err = evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 5_000_000_000_000)
 		if err != nil {
 			return nil, fmt.Errorf("check token info failed: %w", err)
 		}
