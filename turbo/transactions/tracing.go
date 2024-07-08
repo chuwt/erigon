@@ -223,7 +223,7 @@ func TraceTxToken(
 			tokenHasBalanceOf[address] = hasBalanceOf[index]
 		}
 		balanceOfResult, _ := json.Marshal(tokenHasBalanceOf)
-		log.Debug("[token tracing] balance result", "result", balanceOfResult)
+		log.Debug("[token tracing] balance result", "result", string(balanceOfResult))
 
 		// get the result of the tracer
 		rawJson, err = tracer.(tracers.Tracer).GetResult()
