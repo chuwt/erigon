@@ -243,7 +243,7 @@ func TraceTxToken(
 		tokenWithWalletAddress := make(map[libcommon.Address]map[libcommon.Address]struct{})
 		for contract, values := range balanceCheckContract.Contracts {
 			// ignore the contract which doesn't have balanceOf function
-			if _, _hasBalanceOf := tokenHasBalanceOf[contract]; !_hasBalanceOf {
+			if _falseResult, _hasBalanceOf := tokenHasBalanceOf[contract]; !_hasBalanceOf || !_falseResult {
 				continue
 			}
 			for _, value := range values {
