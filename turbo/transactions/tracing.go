@@ -205,15 +205,22 @@ func TraceTxToken(
 			return nil, fmt.Errorf("gen balance data failed: %w", err)
 		}
 
-		rawTokenInfo, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 5_000_000_000_000)
+		rawBalance, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 5_000_000_000_000)
 		if err != nil {
 			return nil, fmt.Errorf("check token failed: %w", err)
 		}
 
 		// todo, check if the balanceOf success
-		contractResult, err := tokenContract.abi.Unpack("balance", rawTokenInfo)
+		contractResult, err := tokenContract.abi.Unpack("balance", rawBalance)
 		if err != nil {
 			return nil, fmt.Errorf("call balance data failed: %w", err)
+		}
+		// balanceOf mapping
+		hasBalanceOf := make([]bool, 0)
+		tokenHasBalanceOf := make(map[libcommon.Address]bool)
+		abi.ConvertType(contractResult[0], &hasBalanceOf)
+		for index, address := range tokenCheckList {
+			tokenHasBalanceOf[address] = hasBalanceOf[index]
 		}
 
 		// get the result of the tracer
@@ -233,6 +240,10 @@ func TraceTxToken(
 		// compare the balanceCheckContract to get the tokens
 		tokenWithWalletAddress := make(map[libcommon.Address]map[libcommon.Address]struct{})
 		for contract, values := range balanceCheckContract.Contracts {
+			// ignore the contract which doesn't have balanceOf function
+			if _, _hasBalanceOf := tokenHasBalanceOf[contract]; !_hasBalanceOf {
+				continue
+			}
 			for _, value := range values {
 				stateKeyData, _ := strings.CutPrefix(strings.ToLower(value), "0x")
 				containsAddress, _ := strings.CutPrefix(strings.ToLower(tokenContract.address.String()), "0x")
@@ -323,7 +334,7 @@ func TraceTxToken(
 			return nil, fmt.Errorf("pack tokenInfo failed: %w", err)
 		}
 		// get wallet balance
-		rawTokenInfo, _, err = evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 5_000_000_000_000)
+		rawTokenInfo, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 5_000_000_000_000)
 		if err != nil {
 			return nil, fmt.Errorf("check token info failed: %w", err)
 		}
