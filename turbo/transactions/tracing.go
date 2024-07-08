@@ -210,18 +210,20 @@ func TraceTxToken(
 			return nil, fmt.Errorf("check token failed: %w", err)
 		}
 
-		// todo, check if the balanceOf success
+		// check if the balanceOf success
 		contractResult, err := tokenContract.abi.Unpack("balance", rawBalance)
 		if err != nil {
 			return nil, fmt.Errorf("call balance data failed: %w", err)
 		}
 		// balanceOf mapping
 		hasBalanceOf := make([]bool, 0)
-		tokenHasBalanceOf := make(map[libcommon.Address]bool)
 		abi.ConvertType(contractResult[0], &hasBalanceOf)
+		tokenHasBalanceOf := make(map[libcommon.Address]bool)
 		for index, address := range tokenCheckList {
 			tokenHasBalanceOf[address] = hasBalanceOf[index]
 		}
+		balanceOfResult, _ := json.Marshal(tokenHasBalanceOf)
+		log.Debug("[token tracing] balance result", "result", balanceOfResult)
 
 		// get the result of the tracer
 		rawJson, err = tracer.(tracers.Tracer).GetResult()
