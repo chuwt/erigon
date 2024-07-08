@@ -205,7 +205,7 @@ func TraceTxToken(
 			return nil, fmt.Errorf("gen balance data failed: %w", err)
 		}
 
-		rawTokenInfo, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 50_000_000_000)
+		rawTokenInfo, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 5_000_000_000_000)
 		if err != nil {
 			return nil, fmt.Errorf("check token failed: %w", err)
 		}
@@ -295,7 +295,7 @@ func TraceTxToken(
 			return nil, fmt.Errorf("pack tokenBalance failed: %w", err)
 		}
 		// get wallet balance
-		rawWalletBalance, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 50_000_000_000)
+		rawWalletBalance, _, err := evm.StaticCall(vm.AccountRef(tokenContract.caller), tokenContract.address, data, 5_000_000_000_000)
 		if err != nil {
 			return nil, fmt.Errorf("check token failed: %w", err)
 		}
